@@ -16,6 +16,7 @@ pipeline {
                 image: snyk/snyk:docker
                 command: ["sleep"]
                 args: ["infinity"]
+                tty: true
                 workingDir: /home/jenkins/agent
                 volumeMounts:
                   - name: workspace
@@ -50,7 +51,7 @@ pipeline {
 
         stage('Scan & Enforce Failure') {
             steps {
-                container('snyk') {
+                container('jnlp') {
                     script {
                         withCredentials([string(credentialsId: 'mtf-pm-snyk-token', variable: 'SNYK_TOKEN')]) {
                             echo "🔍 Starting Snyk security scan for INSECURE template"
