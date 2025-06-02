@@ -14,8 +14,8 @@ pipeline {
                 workingDir: /home/jenkins/agent
               - name: snyk
                 image: snyk/snyk:docker
-                command: ["/bin/sh", "-c"]
-                args: ["sleep infinity"]
+                command: ["sleep"]
+                args: ["infinity"]
                 workingDir: /home/jenkins/agent
                 volumeMounts:
                   - name: workspace
