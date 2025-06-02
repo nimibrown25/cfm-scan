@@ -55,13 +55,13 @@ pipeline {
                         withCredentials([string(credentialsId: 'mtf-pm-snyk-token', variable: 'SNYK_TOKEN')]) {
                             echo "🔍 Starting Snyk security scan for INSECURE template"
                        
-                            sh """
+                            sh '''
                                snyk auth "$SNYK_TOKEN"
                                echo "Authenticated with Snyk successfully"
                            
                                echo "Scanning ${env.INSECURE_TEMPLATE} for security vulnerabilities..."
                                snyk iac test ${env.INSECURE_TEMPLATE} --severity-threshold=low
-                            """
+                            '''
                         }
                     }
                 }
@@ -73,11 +73,11 @@ pipeline {
                 container('snyk') {
                     script {
                         withCredentials([string(credentialsId: 'mtf-pm-snyk-token', variable: 'SNYK_TOKEN')]) {
-                            sh """
+                            sh '''
                                 snyk auth "$SNYK_TOKEN"
                                 snyk iac test ${env.INSECURE_TEMPLATE} --json-file-output=insecure-report.json
                                 snyk iac test ${env.INSECURE_TEMPLATE} --sarif-file-output=insecure-report.sarif
-                            """
+                            '''
                         }
                     }      
                 }
@@ -91,10 +91,10 @@ pipeline {
                         withCredentials([string(credentialsId: 'mtf-pm-snyk-token', variable: 'SNYK_TOKEN')]) {
                             echo "📡 Sending insecure template to Snyk monitoring"
                        
-                            sh """
+                            sh '''
                                 snyk auth "$SNYK_TOKEN"
                                 snyk iac monitor ${env.INSECURE_TEMPLATE} --project-name="mtf-pm-cfn-insecure-template-${env.BUILD_NUMBER}"
-                            """
+                            '''
                        
                             echo "✅ Insecure template added to Snyk monitoring"
                         }   
