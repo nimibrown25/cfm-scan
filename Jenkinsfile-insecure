@@ -49,6 +49,23 @@ pipeline {
             }
         }
 
+        stage('Install Dependencies') {
+            steps {
+                container('jnlp') {
+                    script {
+                        sh '''
+                        echo "=== Installing Snyk CLI (binary) ===" 
+                        curl -L https://static.snyk.io/cli/latest/snyk-linux -o snyk 
+                        chmod +x snyk 
+                        mv snyk /usr/local/bin/ 
+                        snyk --version
+                        '''
+                    }
+                }
+            }
+        }
+
+
         stage('Scan & Enforce Failure') {
             steps {
                 container('jnlp') {
@@ -71,7 +88,7 @@ pipeline {
 
         stage('Generate Reports') {
             steps {
-                container('snyk') {
+                container('jnlp') {
                     script {
                         withCredentials([string(credentialsId: 'mtf-pm-snyk-token', variable: 'SNYK_TOKEN')]) {
                             sh '''
@@ -87,7 +104,7 @@ pipeline {
 
         stage('Monitor in Snyk') {
             steps {
-                container('snyk') {
+                container('jnlp') {
                     script {
                         withCredentials([string(credentialsId: 'mtf-pm-snyk-token', variable: 'SNYK_TOKEN')]) {
                             echo "📡 Sending insecure template to Snyk monitoring"
