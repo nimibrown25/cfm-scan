@@ -1,0 +1,97 @@
+# secure-template.yaml
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Secure CloudFormation template following best practices
+
+Resources:
+  # 1. S3 Bucket with encryption and proper access control
+  SecureDataBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: Private
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  # 2. Least privilege IAM Policy
+  MinimalAccessPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: S3ReadOnlyAccess
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - s3:GetObject
+              - s3:ListBucket
+            Resource:
+              - !GetAtt SecureDataBucket.Arn
+              - !Sub '${SecureDataBucket.Arn}/*'
+      Roles:
+        - Ref: LambdaExecutionRole
+
+  # 3. Restricted Security Group
+  RestrictedSSHSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow SSH only from specific IP
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 192.0.2.0/24  # Restricted CIDR
+
+  # 4. Private RDS Instance with secure password
+  PrivateDatabase:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      AllocatedStorage: 20
+      DBInstanceClass: db.t2.micro
+      Engine: MySQL
+      MasterUsername: admin
+      MasterUserPassword: !Ref DBPassword  # Secure parameter reference
+      PubliclyAccessible: false
+      StorageEncrypted: true
+
+  # 5. Lambda function with tracing enabled
+  TracedLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: index.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Runtime: nodejs14.x
+      TracingConfig:
+        Mode: Active
+      Code:
+        ZipFile: |
+          exports.handler = async (event) => {
+              return 'Hello World';
+          };
+
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+
+Parameters:
+  DBPassword:
+    Type: String
+    NoEcho: true
+    Description: RDS master password
+    MinLength: 8
+    MaxLength: 64
+    AllowedPattern: '(?=^.{8,}$)(?=.*\\d)(?=.*[^\\w\\d])(?=.*[A-Z])(?=.*[a-z]).*$'

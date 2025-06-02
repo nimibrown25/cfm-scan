@@ -1,0 +1,74 @@
+# insecure-template.yaml
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Insecure CloudFormation template with multiple security issues
+
+Resources:
+  # 1. S3 Bucket without encryption (Snyk will flag this)
+  InsecureDataBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: PublicRead  # Public access (security issue)
+      WebsiteConfiguration:
+        IndexDocument: index.html
+
+  # 2. IAM Policy with wildcard permissions (Snyk will flag this)
+  OverlyPermissivePolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: AdminAccess
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action: '*'  # Wildcard action (security issue)
+            Resource: '*'
+      Roles:
+        - Ref: LambdaExecutionRole
+
+  # 3. Security Group allowing unrestricted SSH access (Snyk will flag this)
+  OpenSSHSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow SSH from anywhere
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0  # Open to world (security issue)
+
+  # 4. RDS Instance with public access (Snyk will flag this)
+  PublicDatabase:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      AllocatedStorage: 20
+      DBInstanceClass: db.t2.micro
+      Engine: MySQL
+      MasterUsername: admin
+      MasterUserPassword: Password123  # Hardcoded password (security issue)
+      PubliclyAccessible: true  # Public DB (security issue)
+
+  # 5. Lambda function without tracing (Snyk may flag this depending on policy)
+  UntracedLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: index.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Runtime: nodejs14.x
+      Code:
+        ZipFile: |
+          exports.handler = async (event) => {
+              return 'Hello World';
+          };
+
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
