@@ -1,0 +1,109 @@
+pipeline {
+    agent {
+        kubernetes {
+            yaml """
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              labels:
+                app: jenkins-agent
+            spec:
+              containers:
+              - name: jnlp
+                image: jenkins/inbound-agent:latest
+                workingDir: /home/jenkins/agent
+              - name: snyk
+                image: snyk/snyk-cli:latest
+                command: ["/bin/sh", "-c"]
+                args: ["sleep infinity"]
+                workingDir: /home/jenkins/agent
+                volumeMounts:
+                  - name: workspace
+                    mountPath: /home/jenkins/agent
+              volumes:
+                - name: workspace
+                  emptyDir: {}
+"""
+        }
+    }
+   
+    environment {
+        SNYK_TOKEN = credentials('snyk-credentials')
+        INSECURE_TEMPLATE = 'insecure-template.yaml'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Validate Template') {
+            steps {
+                script {
+                    if (!fileExists(env.INSECURE_TEMPLATE)) {
+                        error("❌ Template ${env.INSECURE_TEMPLATE} not found in repository")
+                    }
+                }
+            }
+        }
+
+        stage('Scan & Enforce Failure') {
+            steps {
+                container('snyk') {
+                    script {
+                        echo "🔍 Scanning insecure template (should fail on issues)"
+                       
+                        // Auth and scan (will fail pipeline if issues found)
+                        sh """
+                            snyk auth ${SNYK_TOKEN}
+                            snyk iac test ${env.INSECURE_TEMPLATE} --severity-threshold=low
+                        """
+                       
+                        // This point only reached if scan passes (unexpected)
+                        error("❌ Insecure template passed scan unexpectedly!")
+                    }
+                }
+            }
+        }
+
+        stage('Generate Reports') {
+            steps {
+                container('snyk') {
+                    sh """
+                        snyk auth ${SNYK_TOKEN}
+                        snyk iac test ${env.INSECURE_TEMPLATE} --json-file-output=insecure-report.json
+                        snyk iac test ${env.INSECURE_TEMPLATE} --sarif-file-output=insecure-report.sarif
+                    """
+                }
+            }
+        }
+
+        stage('Monitor in Snyk') {
+            steps {
+                container('snyk') {
+                    script {
+                        echo "📡 Sending insecure template to Snyk monitoring"
+                       
+                        sh """
+                            snyk auth ${SNYK_TOKEN}
+                            snyk iac monitor ${env.INSECURE_TEMPLATE} --project-name="mtf-pm-cfn-insecure-template-${env.BUILD_NUMBER}"
+                        """
+                       
+                        echo "✅ Insecure template added to Snyk monitoring"
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            archiveArtifacts artifacts: 'insecure-report.*', allowEmptyArchive: true
+        }
+        failure {
+            echo "🔥 Pipeline failed as expected - insecure template contains issues"
+        }
+    }
+}
