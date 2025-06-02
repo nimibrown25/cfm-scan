@@ -28,7 +28,7 @@ pipeline {
     }
    
     environment {
-        SNYK_TOKEN = credentials('snyk-credentials')
+        SNYK_TOKEN = credentials('mtf-pm-snyk-token')
         INSECURE_TEMPLATE = 'insecure-template.yaml'
     }
 
