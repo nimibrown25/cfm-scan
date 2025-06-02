@@ -53,12 +53,11 @@ pipeline {
             steps {
                 container('snyk') {
                     script {
-                        sh '''
-                        echo "=== Installing Snyk CLI (binary) ===" 
-                        curl -L https://static.snyk.io/cli/latest/snyk-linux -o snyk 
-                        chmod +x snyk 
-                        mv snyk /usr/local/bin/ 
-                        snyk --version
+                        sh 'echo "=== Installing Snyk CLI (binary) ==="' 
+                        sh 'curl -L https://static.snyk.io/cli/latest/snyk-linux -o snyk' 
+                        sh 'chmod +x snyk' 
+                        sh 'mv snyk /usr/local/bin/' 
+                        sh 'snyk --version'
                         '''
                     }
                 }
