@@ -58,7 +58,7 @@ pipeline {
                             echo "🔍 Starting Snyk security scan for SECURE template"
                        
                             sh """
-                               snyk auth $SNYK_TOKEN
+                               snyk auth "$SNYK_TOKEN"
                                echo "Authenticated with Snyk successfully"
                            
                                echo "Scanning ${env.SECURE_TEMPLATE} for security vulnerabilities..."
@@ -76,7 +76,7 @@ pipeline {
                     script {
                         withCredentials([string(credentialsId: 'mtf-pm-snyk-token', variable: 'SNYK_TOKEN')]) {
                             sh """
-                                snyk auth $SNYK_TOKEN
+                                snyk auth "$SNYK_TOKEN"
                                 snyk iac test ${env.SECURE_TEMPLATE} --json-file-output=secure-report.json
                                 snyk iac test ${env.SECURE_TEMPLATE} --sarif-file-output=secure-report.sarif
                             """
@@ -99,7 +99,7 @@ pipeline {
                             echo "📡 Sending insecure template to Snyk monitoring"
                        
                             sh """
-                                snyk auth $SNYK_TOKEN
+                                snyk auth "$SNYK_TOKEN"
                                 snyk iac monitor ${env.SECURE_TEMPLATE} --project-name="mtf-pm-cfn-secure-template-${env.BUILD_NUMBER}"
                             """
                        
