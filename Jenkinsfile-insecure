@@ -28,6 +28,7 @@ pipeline {
     }
    
     environment {
+        SNYK_TOKEN = credentials('mtf-pm-snyk-token') 
         INSECURE_TEMPLATE = 'insecure-template.yaml'
     }
 
@@ -52,17 +53,15 @@ pipeline {
             steps {
                 container('snyk') {
                     script {
-                        withCredentials([string(credentialsId: 'mtf-pm-snyk-token', variable: 'SNYK_TOKEN')]) {
-                            echo "🔍 Starting Snyk security scan for INSECURE template"
+                        echo "🔍 Starting Snyk security scan for SECURE template"
                        
-                            sh """
-                               snyk auth ${SNYK_TOKEN}
-                               echo "Authenticated with Snyk successfully"
+                        sh """
+                            snyk auth $SNYK_TOKEN
+                            echo "Authenticated with Snyk successfully"
                            
-                               echo "Scanning ${env.INSECURE_TEMPLATE} for security vulnerabilities..."
-                               snyk iac test ${env.INSECURE_TEMPLATE} --severity-threshold=low
-                            """
-                        }
+                            echo "Scanning ${env.SECURE_TEMPLATE} for security vulnerabilities..."
+                            snyk iac test ${env.SECURE_TEMPLATE} --severity-threshold=high
+                        """
                     }
                 }
             }
@@ -72,7 +71,7 @@ pipeline {
             steps {
                 container('snyk') {
                     sh """
-                        snyk auth ${SNYK_TOKEN}
+                        snyk auth $SNYK_TOKEN
                         snyk iac test ${env.INSECURE_TEMPLATE} --json-file-output=insecure-report.json
                         snyk iac test ${env.INSECURE_TEMPLATE} --sarif-file-output=insecure-report.sarif
                     """
@@ -87,7 +86,7 @@ pipeline {
                         echo "📡 Sending insecure template to Snyk monitoring"
                        
                         sh """
-                            snyk auth ${SNYK_TOKEN}
+                            snyk auth $SNYK_TOKEN
                             snyk iac monitor ${env.INSECURE_TEMPLATE} --project-name="mtf-pm-cfn-insecure-template-${env.BUILD_NUMBER}"
                         """
                        
