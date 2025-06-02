@@ -28,7 +28,6 @@ pipeline {
     }
    
     environment {
-        SNYK_TOKEN = credentials('mtf-pm-snyk-token')
         SECURE_TEMPLATE = 'secure-template.yaml'
     }
 
@@ -55,15 +54,17 @@ pipeline {
             steps {
                 container('snyk') {
                     script {
-                        echo "🔍 Starting Snyk security scan for SECURE template"
+                        withCredentials([string(credentialsId: 'mtf-pm-snyk-token', variable: 'SNYK_TOKEN')]) {
+                            echo "🔍 Starting Snyk security scan for SECURE template"
                        
-                        sh """
-                            snyk auth $SNYK_TOKEN
-                            echo "Authenticated with Snyk successfully"
+                            sh """
+                               snyk auth $SNYK_TOKEN
+                               echo "Authenticated with Snyk successfully"
                            
-                            echo "Scanning ${env.SECURE_TEMPLATE} for security vulnerabilities..."
-                            snyk iac test ${env.SECURE_TEMPLATE} --severity-threshold=high
-                        """
+                               echo "Scanning ${env.SECURE_TEMPLATE} for security vulnerabilities..."
+                               snyk iac test ${env.SECURE_TEMPLATE} --severity-threshold=high
+                            """
+                        }
                     }
                 }
             }
@@ -73,19 +74,13 @@ pipeline {
             steps {
                 container('snyk') {
                     script {
-                        echo "📊 Generating detailed security reports"
-                       
-                        sh """
-                            snyk auth $SNYK_TOKEN
-                           
-                            # Generate JSON report
-                            snyk iac test ${env.SECURE_TEMPLATE} --json-file-output=secure-template-report.json || true
-                           
-                            # Generate SARIF report
-                            snyk iac test ${env.SECURE_TEMPLATE} --sarif-file-output=secure-template-report.sarif || true
-                           
-                            echo "Reports generated successfully"
-                        """
+                        withCredentials([string(credentialsId: 'mtf-pm-snyk-token', variable: 'SNYK_TOKEN')]) {
+                            sh """
+                                snyk auth $SNYK_TOKEN
+                                snyk iac test ${env.SECURE_TEMPLATE} --json-file-output=secure-report.json
+                                snyk iac test ${env.SECURE_TEMPLATE} --sarif-file-output=secure-report.sarif
+                            """
+                        }
                     }
                 }
             }
@@ -100,14 +95,16 @@ pipeline {
             steps {
                 container('snyk') {
                     script {
-                        echo "📡 Sending secure template to Snyk monitoring"
+                        withCredentials([string(credentialsId: 'mtf-pm-snyk-token', variable: 'SNYK_TOKEN')]) {
+                            echo "📡 Sending insecure template to Snyk monitoring"
                        
-                        sh """
-                            snyk auth $SNYK_TOKEN
-                            snyk iac monitor ${env.SECURE_TEMPLATE} --project-name="mtf-pm-cfn-secure-template-${env.BUILD_NUMBER}"
-                        """
+                            sh """
+                                snyk auth $SNYK_TOKEN
+                                snyk iac monitor ${env.SECURE_TEMPLATE} --project-name="mtf-pm-cfn-secure-template-${env.BUILD_NUMBER}"
+                            """
                        
-                        echo "✅ Secure template added to Snyk monitoring"
+                            echo "✅ Insecure template added to Snyk monitoring"
+                        }
                     }
                 }
             }
