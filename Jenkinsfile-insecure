@@ -58,7 +58,6 @@ pipeline {
                         sh 'chmod +x snyk' 
                         sh 'mv snyk /usr/local/bin/' 
                         sh 'snyk --version'
-                        '''
                     }
                 }
             }
