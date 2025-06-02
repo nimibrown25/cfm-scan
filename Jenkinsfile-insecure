@@ -13,9 +13,9 @@ pipeline {
                 image: jenkins/inbound-agent:latest
                 workingDir: /home/jenkins/agent
               - name: snyk
-                image: snyk/snyk:linux
-                command: ["sleep"]
-                args: ["infinity"]
+                image: node:18-alpine
+                command: ["/bin/sh", "-c"]
+                args: ["sleep infinity"]
                 tty: true
                 workingDir: /home/jenkins/agent
                 volumeMounts:
@@ -48,6 +48,23 @@ pipeline {
                 }
             }
         }
+
+        stage('Install snyk') {
+            steps {
+                container('snyk') {
+                    script {
+                        sh '''
+                        echo "=== Installing Snyk CLI (binary) ===" 
+                        curl -L https://static.snyk.io/cli/latest/snyk-linux -o snyk 
+                        chmod +x snyk 
+                        mv snyk /usr/local/bin/ 
+                        snyk --version
+                        '''
+                    }
+                }
+            }
+        }
+
 
         
 
