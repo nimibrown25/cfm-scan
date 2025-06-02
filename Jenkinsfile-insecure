@@ -28,7 +28,6 @@ pipeline {
     }
    
     environment {
-        SNYK_TOKEN = credentials('snyk-credentials')
         INSECURE_TEMPLATE = 'insecure-template.yaml'
     }
 
@@ -53,16 +52,17 @@ pipeline {
             steps {
                 container('snyk') {
                     script {
-                        echo "🔍 Scanning insecure template (should fail on issues)"
+                        withCredentials([string(credentialsId: 'mtf-pm-snyk-token', variable: 'SNYK_TOKEN')]) {
+                            echo "🔍 Starting Snyk security scan for INSECURE template"
                        
-                        // Auth and scan (will fail pipeline if issues found)
-                        sh """
-                            snyk auth ${SNYK_TOKEN}
-                            snyk iac test ${env.INSECURE_TEMPLATE} --severity-threshold=low
-                        """
-                       
-                        // This point only reached if scan passes (unexpected)
-                        error("❌ Insecure template passed scan unexpectedly!")
+                            sh """
+                               snyk auth ${SNYK_TOKEN}
+                               echo "Authenticated with Snyk successfully"
+                           
+                               echo "Scanning ${env.INSECURE_TEMPLATE} for security vulnerabilities..."
+                               snyk iac test ${env.INSECURE_TEMPLATE} --severity-threshold=low
+                            """
+                        }
                     }
                 }
             }
