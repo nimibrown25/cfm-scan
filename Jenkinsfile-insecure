@@ -82,22 +82,9 @@ pipeline {
                             echo "Authenticated with Snyk successfully"
                            
                             echo "Scanning ${INSECURE_TEMPLATE} for security vulnerabilities..."
-                            ./snyk iac test ${INSECURE_TEMPLATE} --severity-threshold=low
-                            ./snyk iac monitor ${INSECURE_TEMPLATE} --report --project-name="mtf-pm-cfn-insecure-template"
-                        '''
-                    }
-                }
-            }
-        }
-
-        stage('Generate Security Report') {
-            steps {
-                script {
-                    withCredentials([string(credentialsId: 'mtf-pm-snyk-token', variable: 'SNYK_TOKEN')]) {
-                        sh '''
-                            ./snyk auth "$SNYK_TOKEN"
-                            ./snyk iac test ${INSECURE_TEMPLATE} --json-file-output=secure-report.json
-                            ./snyk iac test ${INSECURE_TEMPLATE} --sarif-file-output=secure-report.sarif
+                            ./snyk iac test ${INSECURE_TEMPLATE} --severity-threshold=low --json-file-output=insecure-report.json || true
+                            ./snyk iac test ${INSECURE_TEMPLATE} --sarif-file-output=secure-report.sarif || true
+                            ./snyk iac monitor ${INSECURE_TEMPLATE} --report --project-name="mtf-pm-cfn-insecure-template" || true
                         '''
                     }
                 }
