@@ -83,7 +83,7 @@ pipeline {
                            
                             echo "Scanning ${INSECURE_TEMPLATE} for security vulnerabilities..."
                             ./snyk iac test ${INSECURE_TEMPLATE} --report --severity-threshold=low --json-file-output=insecure-report.json || true
-                            ./snyk iac test ${INSECURE_TEMPLATE} --sarif-file-output=secure-report.sarif || true
+                            ./snyk iac test ${INSECURE_TEMPLATE} --report --sarif-file-output=secure-report.sarif || true
                             ./snyk monitor ${INSECURE_TEMPLATE} --project-name="mtf-pm-cfn-insecure-template" || true
                         '''
                     }
