@@ -2,22 +2,6 @@ AWSTemplateFormatVersion: '2010-09-09'
 Description: Secure CloudFormation template following best practices
 
 Resources:
-  # Bucket for storing access logs
-  AccessLogsBucket:
-    Type: AWS::S3::Bucket
-    Properties:
-      BucketEncryption:
-        ServerSideEncryptionConfiguration:
-          - ServerSideEncryptionByDefault:
-              SSEAlgorithm: AES256
-      VersioningConfiguration:
-        Status: Enabled        
-      PublicAccessBlockConfiguration:
-        BlockPublicAcls: true
-        BlockPublicPolicy: true
-        IgnorePublicAcls: true
-        RestrictPublicBuckets: true
-
   #  S3 Bucket with encryption, versioning, logging, and proper access control
   SecureDataBucket:
     Type: AWS::S3::Bucket
@@ -28,9 +12,6 @@ Resources:
               SSEAlgorithm: AES256
       VersioningConfiguration:
         Status: Enabled
-      LoggingConfiguration:
-        DestinationBucketName: !Ref AccessLogsBucket
-        LogFilePrefix: s3-access-logs/
       PublicAccessBlockConfiguration:
         BlockPublicAcls: true
         BlockPublicPolicy: true
