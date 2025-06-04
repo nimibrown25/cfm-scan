@@ -1,13 +1,32 @@
-# secure-template.yaml
 AWSTemplateFormatVersion: '2010-09-09'
 Description: Secure CloudFormation template following best practices
 
 Resources:
-  # 1. S3 Bucket with encryption and proper access control
+  # 1. S3 Bucket with encryption, versioning, logging, and proper access control
   SecureDataBucket:
     Type: AWS::S3::Bucket
     Properties:
       AccessControl: Private
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      VersioningConfiguration:
+        Status: Enabled
+      LoggingConfiguration:
+        DestinationBucketName: !Ref AccessLogsBucket
+        LogFilePrefix: "s3-access-logs/"
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  # Bucket for storing access logs
+  AccessLogsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: LogDeliveryWrite
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
@@ -47,7 +66,7 @@ Resources:
           ToPort: 22
           CidrIp: 192.0.2.0/24  # Restricted CIDR
 
-  # 4. Private RDS Instance with secure password
+  # 4. Private RDS Instance with secure password, backups, and IAM auth
   PrivateDatabase:
     Type: AWS::RDS::DBInstance
     Properties:
@@ -58,6 +77,8 @@ Resources:
       MasterUserPassword: !Ref DBPassword  # Secure parameter reference
       PubliclyAccessible: false
       StorageEncrypted: true
+      BackupRetentionPeriod: 7  # Enable backups with 7-day retention
+      EnableIAMDatabaseAuthentication: true  # Enable IAM authentication
 
   # 5. Lambda function with tracing enabled
   TracedLambda:
