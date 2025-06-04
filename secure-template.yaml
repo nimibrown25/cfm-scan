@@ -28,7 +28,7 @@ Resources:
         Status: Enabled
       LoggingConfiguration:
         DestinationBucketName: !Ref AccessLogsBucket
-        LogFilePrefix: "s3-access-logs/"
+        LogFilePrefix: s3-access-logs/
       PublicAccessBlockConfiguration:
         BlockPublicAcls: true
         BlockPublicPolicy: true
